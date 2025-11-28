@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "IG Quick Save V3 Beta",
+  "version": "3.0.0",
+  "description": "Download media and comments from Instagram posts and profiles - V3 Beta with profile scraping and archive viewer",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://www.instagram.com/*"
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["scripts/content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/inject-v7-final.js", "scripts/profile-scraper.js", "config.js"],
+      "matches": ["https://www.instagram.com/*"]
+    },
+    {
+      "resources": ["viewer/instagram-viewer.html", "viewer/viewer.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

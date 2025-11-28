@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Downloader</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 16px;
+      background: #fafafa;
+      color: #262626;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #dbdbdb;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 12px;
+      color: #8e8e8e;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .status.info {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .status.warning {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #dbdbdb;
+    }
+
+    .stat-card .label {
+      font-size: 11px;
+      color: #8e8e8e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    button {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: #0095f6;
+      color: white;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: #0081d8;
+    }
+
+    button.secondary {
+      background: white;
+      color: #262626;
+      border: 1px solid #dbdbdb;
+    }
+
+    button.secondary:hover:not(:disabled) {
+      background: #fafafa;
+    }
+
+    .download-options {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #dbdbdb;
+    }
+
+    .download-options h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #8e8e8e;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .button-group button {
+      flex: 1;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.6s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Password screen styles */
+    #passwordScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+    }
+
+    #passwordScreen.hidden {
+      display: none !important;
+    }
+
+    #passwordScreen h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #262626;
+    }
+
+    #passwordScreen p {
+      font-size: 12px;
+      color: #8e8e8e;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .password-input-group {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .password-input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dbdbdb;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    .password-input-group input:focus {
+      outline: none;
+      border-color: #0095f6;
+    }
+
+    .password-error {
+      color: #c62828;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    #mainContent {
+      display: none;
+    }
+
+    #mainContent.unlocked {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Password Screen -->
+  <div id="passwordScreen">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+      <h2>Protected Extension</h2>
+      <p>Enter password to access IG Quick Save V3 Beta</p>
+    </div>
+
+    <div class="password-input-group">
+      <input type="password" id="passwordInput" placeholder="Enter password" autofocus>
+      <div id="passwordError" class="password-error hidden"></div>
+    </div>
+
+    <button id="unlockBtn" class="primary" style="width: 100%;">
+      Unlock
+    </button>
+  </div>
+
+  <!-- Main Content (hidden until unlocked) -->
+  <div id="mainContent">
+    <div class="header">
+      <h1>📸 IG Quick Save V3 Beta</h1>
+      <p>Download media & comments from posts and profiles</p>
+    </div>
+
+  <div id="status" class="status info">
+    <span id="statusText">Loading...</span>
+  </div>
+
+  <div id="stats" class="stats hidden">
+    <div class="stat-card">
+      <div class="label">Media Files</div>
+      <div class="value" id="mediaCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Comments</div>
+      <div class="value" id="commentCount">0</div>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button id="extractBtn" class="primary">
+      Extract Post Data
+    </button>
+
+    <div id="downloadOptions" class="download-options hidden">
+      <h3>Download Options</h3>
+
+      <div style="margin-bottom: 8px;">
+        <label style="display: flex; align-items: center; font-size: 12px; cursor: pointer;">
+          <input type="checkbox" id="askWhereToSave" style="margin-right: 6px;">
+          Ask where to save files
+        </label>
+      </div>
+
+      <div class="button-group">
+        <button id="downloadMediaBtn" class="secondary">
+          📷 Media
+        </button>
+        <button id="downloadCommentsBtn" class="secondary">
+          💬 Comments
+        </button>
+        <button id="downloadScreenshotBtn" class="secondary">
+          📸 Screenshot
+        </button>
+      </div>
+
+      <button id="downloadAllBtn" class="primary" style="margin-top: 8px;">
+        ⬇️ Download Everything
+      </button>
+
+      <div id="commentFormat" class="button-group" style="margin-top: 8px;">
+        <button id="downloadJsonBtn" class="secondary" style="font-size: 12px;">
+          JSON
+        </button>
+        <button id="downloadCsvBtn" class="secondary" style="font-size: 12px;">
+          CSV
+        </button>
+        <button id="downloadHtmlBtn" class="secondary" style="font-size: 12px;">
+          HTML
+        </button>
+      </div>
+    </div>
+
+    <!-- Profile Scraper Section -->
+    <div id="profileSection" class="profile-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #dbdbdb;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <h3 style="font-size: 13px; font-weight: 600; color: #8e8e8e; margin: 0;">👤 Profile Download</h3>
+        <button id="toggleProfileBtn" class="secondary" style="padding: 4px 8px; font-size: 11px;">
+          Show
+        </button>
+      </div>
+
+      <div id="profileContent" class="hidden">
+        <div id="profileNotOnProfile" style="padding: 12px; background: #fff3e0; border-radius: 8px; margin-bottom: 12px; font-size: 12px; color: #f57c00;">
+          ⚠️ Go to an Instagram profile page to use this feature
+        </div>
+
+        <div id="profileOnProfile" class="hidden">
+          <div style="margin-bottom: 12px; padding: 12px; background: #e8f5e9; border-radius: 8px;">
+            <div style="font-size: 12px; color: #2e7d32; font-weight: 600;">
+              ✅ On profile: <span id="profileUsername">@username</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #8e8e8e; margin-bottom: 4px; display: block;">
+              Number of posts to download:
+            </label>
+            <select id="profilePostCount" style="width: 100%; padding: 8px; border: 1px solid #dbdbdb; border-radius: 4px; font-size: 12px;">
+              <option value="10">10 posts</option>
+              <option value="25" selected>25 posts</option>
+              <option value="50">50 posts</option>
+              <option value="100">100 posts</option>
+              <option value="0">All posts (may take a while)</option>
+            </select>
+          </div>
+
+          <div class="button-group" style="margin-bottom: 12px;">
+            <button id="startProfileScrapeBtn" class="primary">
+              🔍 Collect Posts
+            </button>
+            <button id="stopProfileScrapeBtn" class="secondary" disabled>
+              ⏹️ Stop
+            </button>
+          </div>
+
+          <div id="profileScrapeProgress" class="hidden" style="margin-bottom: 12px; padding: 12px; background: #e3f2fd; border-radius: 8px;">
+            <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #1976d2;">
+              <span id="profileScrapeStatus">Collecting posts...</span>
+            </div>
+            <div style="font-size: 11px; color: #1976d2; margin-bottom: 4px;">
+              Found: <span id="profileScrapeCount">0</span> posts
+            </div>
+            <div style="width: 100%; height: 6px; background: #bbdefb; border-radius: 3px; overflow: hidden;">
+              <div id="profileScrapeBar" style="width: 0%; height: 100%; background: #1976d2; transition: width 0.3s;"></div>
+            </div>
+          </div>
+
+          <div id="profileScrapeComplete" class="hidden" style="margin-bottom: 12px;">
+            <div style="padding: 12px; background: #e8f5e9; border-radius: 8px; margin-bottom: 8px;">
+              <div style="font-size: 12px; font-weight: 600; color: #2e7d32;">
+                ✅ Collected <span id="profileCollectedCount">0</span> posts from @<span id="profileCollectedUser">user</span>
+              </div>
+            </div>
+            <button id="downloadProfilePostsBtn" class="primary" style="width: 100%;">
+              ⬇️ Download All Posts
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch Download Section -->
+    <div id="batchSection" class="batch-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #dbdbdb;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <h3 style="font-size: 13px; font-weight: 600; color: #8e8e8e; margin: 0;">📦 Batch Download</h3>
+        <button id="toggleBatchBtn" class="secondary" style="padding: 4px 8px; font-size: 11px;">
+          Show
+        </button>
+      </div>
+
+      <div id="batchContent" class="hidden">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; color: #8e8e8e; margin-bottom: 4px; display: block;">
+            Instagram Post URLs (one per line):
+          </label>
+          <textarea
+            id="batchUrls"
+            placeholder="https://www.instagram.com/p/ABC123/&#10;https://www.instagram.com/p/DEF456/&#10;https://www.instagram.com/p/GHI789/"
+            style="width: 100%; height: 100px; padding: 8px; border: 1px solid #dbdbdb; border-radius: 4px; font-size: 12px; font-family: monospace; resize: vertical;"
+          ></textarea>
+          <div id="urlCount" style="font-size: 11px; color: #8e8e8e; margin-top: 4px;">
+            0 URLs
+          </div>
+        </div>
+
+        <!-- Skip Downloaded Toggle -->
+        <div style="margin-bottom: 12px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px;">
+            <input type="checkbox" id="skipDownloadedToggle" checked style="width: 16px; height: 16px; cursor: pointer;">
+            <span>Skip already downloaded posts</span>
+          </label>
+          <div style="font-size: 11px; color: #8e8e8e; margin-top: 6px; margin-left: 24px;">
+            <span id="downloadHistoryCount">0</span> posts in download history
+            <button id="clearHistoryBtn" style="background: none; border: none; color: #0095f6; cursor: pointer; font-size: 11px; padding: 0; margin-left: 8px;">Clear</button>
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-bottom: 12px;">
+          <button id="startBatchBtn" class="primary">
+            ▶️ Start Batch
+          </button>
+          <button id="stopBatchBtn" class="secondary" disabled>
+            ⏹️ Stop
+          </button>
+        </div>
+
+        <div id="batchProgress" class="hidden" style="margin-bottom: 12px; padding: 12px; background: #f0f0f0; border-radius: 8px;">
+          <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+            <span id="batchStatus">Processing...</span>
+          </div>
+          <div style="font-size: 11px; color: #8e8e8e; margin-bottom: 4px;">
+            Progress: <span id="batchProgressText">0/0</span>
+          </div>
+          <div style="width: 100%; height: 6px; background: #dbdbdb; border-radius: 3px; overflow: hidden;">
+            <div id="batchProgressBar" style="width: 0%; height: 100%; background: #0095f6; transition: width 0.3s;"></div>
+          </div>
+          <div style="font-size: 11px; margin-top: 8px;">
+            Current: <span id="batchCurrentUrl" style="color: #0095f6; word-break: break-all;">-</span>
+          </div>
+        </div>
+
+        <div id="batchResults" class="hidden" style="margin-top: 12px;">
+          <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #2e7d32;">
+            ✅ Completed: <span id="successCount">0</span>
+          </div>
+          <div id="failedSection" class="hidden">
+            <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #c62828;">
+              ❌ Failed: <span id="failedCount">0</span>
+            </div>
+            <div id="failedUrls" style="max-height: 100px; overflow-y: auto; padding: 8px; background: #ffebee; border-radius: 4px; font-size: 11px; font-family: monospace;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Open Viewer Button -->
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #dbdbdb;">
+      <button id="openViewerBtn" class="secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span style="font-size: 16px;">📺</span> Open Archive Viewer
+      </button>
+    </div>
+
+    <!-- Version Info -->
+    <div style="text-align: center; margin-top: 12px;">
+      <div style="font-size: 10px; color: #8e8e8e;">
+        IG Quick Save V3.0.0 Beta
+      </div>
+      <div style="font-size: 9px; color: #c7c7c7; margin-top: 2px;">
+        Profile Scraping · Archive Viewer · Batch Download
+      </div>
+    </div>
+  </div>
+  </div>
+  <!-- End Main Content -->
+
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
