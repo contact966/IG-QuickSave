@@ -722,18 +722,37 @@ function openModal(postIndex) {
     </div>
   `;
 
-  // Caption (separate section)
+  // Caption (separate section) - with expand/collapse for long captions
   if (post.caption) {
+    const hasLongCaption = post.caption.length > 150;
     modalCaption.innerHTML = `
       <div class="modal-caption-content">
         ${renderAvatar(username, post.avatars, 'comment-avatar')}
         <div class="modal-caption-text">
-          <span class="modal-caption-username">${escapeHtml(username)}</span>${escapeHtml(post.caption)}
+          <div class="modal-caption-body" id="modalCaptionBody">
+            <span class="modal-caption-username">${escapeHtml(username)}</span>${escapeHtml(post.caption)}
+          </div>
+          ${hasLongCaption ? `<span class="modal-caption-more" id="modalCaptionMore">more</span>` : ''}
           <div class="modal-caption-time">${relativeTime}</div>
         </div>
       </div>
     `;
     modalCaption.style.display = 'block';
+
+    // Add click handler for expand/collapse
+    if (hasLongCaption) {
+      const captionMore = document.getElementById('modalCaptionMore');
+      const captionBody = document.getElementById('modalCaptionBody');
+      captionMore?.addEventListener('click', () => {
+        if (captionBody.classList.contains('expanded')) {
+          captionBody.classList.remove('expanded');
+          captionMore.textContent = 'more';
+        } else {
+          captionBody.classList.add('expanded');
+          captionMore.textContent = 'less';
+        }
+      });
+    }
   } else {
     modalCaption.innerHTML = '';
     modalCaption.style.display = 'none';
