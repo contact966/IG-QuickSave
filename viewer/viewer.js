@@ -496,27 +496,65 @@ function renderGridView(postsToRender) {
     const isVideo = post.media.some(m => m.type === 'video');
     const isCarousel = post.media.length > 1;
     const postIndex = posts.indexOf(post);
+    const username = post.username || 'Unknown';
+    const hasLongCaption = post.caption && post.caption.length > 100;
+    const captionId = `grid-caption-${postIndex}`;
 
     return `
       <div class="grid-item" data-post-index="${postIndex}">
-        ${media ? (media.type === 'video'
-          ? `<video src="${media.url}" muted></video>`
-          : `<img src="${media.url}" alt="">`)
-          : '<div style="background: var(--bg-tertiary); width: 100%; height: 100%;"></div>'}
-        <div class="grid-item-overlay">
-          <span class="grid-stat">❤️ ${formatNumber(post.like_count || 0)}</span>
-          <span class="grid-stat">💬 ${formatNumber(post.comment_count || 0)}</span>
+        <div class="grid-item-media" data-action="open-modal">
+          ${media ? (media.type === 'video'
+            ? `<video src="${media.url}" muted></video>`
+            : `<img src="${media.url}" alt="">`)
+            : '<div style="background: var(--bg-tertiary); width: 100%; height: 100%;"></div>'}
+          <div class="grid-item-overlay">
+            <span class="grid-stat">❤️ ${formatNumber(post.like_count || 0)}</span>
+            <span class="grid-stat">💬 ${formatNumber(post.comment_count || 0)}</span>
+          </div>
+          ${isCarousel ? '<span class="grid-item-type">📷</span>' : ''}
+          ${isVideo && !isCarousel ? '<span class="grid-item-type">▶️</span>' : ''}
         </div>
-        ${isCarousel ? '<span class="grid-item-type">📷</span>' : ''}
-        ${isVideo && !isCarousel ? '<span class="grid-item-type">▶️</span>' : ''}
+        <div class="grid-item-info">
+          <div class="grid-item-header">
+            ${renderAvatar(username, post.avatars, 'grid-item-avatar')}
+            <span class="grid-item-username">${escapeHtml(username)}</span>
+          </div>
+          ${post.caption ? `
+            <div class="grid-item-caption" id="${captionId}">${escapeHtml(post.caption)}</div>
+            ${hasLongCaption ? `
+              <div class="grid-item-caption-more" data-caption-id="${captionId}">more</div>
+            ` : ''}
+          ` : ''}
+          <div class="grid-item-stats">
+            <span>❤️ ${formatNumber(post.like_count || 0)}</span>
+            <span>💬 ${formatNumber(post.comment_count || 0)}</span>
+          </div>
+        </div>
       </div>
     `;
   }).join('');
 
-  // Add click handlers
-  gridView.querySelectorAll('.grid-item').forEach(item => {
+  // Add click handlers for opening modal
+  gridView.querySelectorAll('.grid-item-media').forEach(item => {
     item.addEventListener('click', () => {
-      openModal(parseInt(item.dataset.postIndex));
+      const postIndex = parseInt(item.closest('.grid-item').dataset.postIndex);
+      openModal(postIndex);
+    });
+  });
+
+  // Add click handlers for caption expand/collapse
+  gridView.querySelectorAll('.grid-item-caption-more').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const captionId = btn.dataset.captionId;
+      const caption = document.getElementById(captionId);
+      if (caption.classList.contains('expanded')) {
+        caption.classList.remove('expanded');
+        btn.textContent = 'more';
+      } else {
+        caption.classList.add('expanded');
+        btn.textContent = 'less';
+      }
     });
   });
 }

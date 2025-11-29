@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "IG Quick Save V3 Beta",
-  "version": "3.0.0",
-  "description": "Download media and comments from Instagram posts and profiles - V3 Beta with profile scraping and archive viewer",
+  "name": "IG Quick Save V6.4 Stable",
+  "version": "6.4.0",
+  "description": "Download media and comments from Instagram posts and profiles - with profile scraping and archive viewer",
   "permissions": [
     "activeTab",
     "downloads",

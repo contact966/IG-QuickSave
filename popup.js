@@ -37,7 +37,7 @@ async function initializePassword() {
 
   // If no password hash exists, create one from default password 'MM66^^'
   if (!result[CONFIG.SECURITY.PASSWORD_STORAGE_KEY]) {
-    const defaultHash = await CONFIG.hashPassword('MM66^^');
+    const defaultHash = await CONFIG.hashPassword('MM777*+');
     await chrome.storage.local.set({ [CONFIG.SECURITY.PASSWORD_STORAGE_KEY]: defaultHash });
   }
 }
