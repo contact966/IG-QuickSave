@@ -641,9 +641,10 @@ chrome.runtime.onConnect.addListener((port) => {
         } else if (msg.action === 'downloadMedia') {
           const { media, postInfo, saveAs } = msg.data;
 
-          // Build custom folder name
+          // Build custom folder name with username parent folder
+          const username = postInfo.username || 'unknown';
           const folderName = buildFolderName(postInfo);
-          const folderPrefix = `Instagram/${folderName}/media`;
+          const folderPrefix = `Instagram/${username}/${folderName}/media`;
 
           // Build base filename prefix
           const filePrefix = buildFilePrefix(postInfo);
@@ -780,6 +781,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
           // Get post info from either media or comments data
           const postInfo = currentData.media?.post_info || currentData.comments?.post_info || {};
+          const username = postInfo.username || 'unknown';
           const folderName = buildFolderName(postInfo);
           const filePrefix = buildFilePrefix(postInfo);
 
@@ -793,7 +795,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
           // Download media
           if (currentData.media && currentData.media.media) {
-            const folderPrefix = `Instagram/${folderName}/media`;
+            const folderPrefix = `Instagram/${username}/${folderName}/media`;
             const mediaCount = currentData.media.media.length;
 
             if (activePopupPort) {
@@ -830,12 +832,12 @@ chrome.runtime.onConnect.addListener((port) => {
               });
             }
 
-            const jsonFilename = `Instagram/${folderName}/comments/${filePrefix}_comments.json`;
+            const jsonFilename = `Instagram/${username}/${folderName}/comments/${filePrefix}_comments.json`;
             await downloadJSON(currentData.comments, jsonFilename, false);
 
             // Pass full currentData.comments object (includes post_info and comments)
             const csv = commentsToCSV(currentData.comments);
-            const csvFilename = `Instagram/${folderName}/comments/${filePrefix}_comments.csv`;
+            const csvFilename = `Instagram/${username}/${folderName}/comments/${filePrefix}_comments.csv`;
             await downloadCSV(csv, csvFilename, false);
           }
 
@@ -853,7 +855,7 @@ chrome.runtime.onConnect.addListener((port) => {
             media_count: currentData.media?.media?.length || 0,
             comment_count: currentData.comments?.total || 0
           };
-          const metadataFilename = `Instagram/${folderName}/${filePrefix}_metadata.json`;
+          const metadataFilename = `Instagram/${username}/${folderName}/${filePrefix}_metadata.json`;
           await downloadJSON(metadata, metadataFilename, false);
 
           // Download HTML archive
@@ -865,7 +867,7 @@ chrome.runtime.onConnect.addListener((port) => {
           }
 
           const htmlContent = await generatePostHTML(currentData, filePrefix);
-          const htmlFilename = `Instagram/${folderName}/${filePrefix}_archive.html`;
+          const htmlFilename = `Instagram/${username}/${folderName}/${filePrefix}_archive.html`;
           await downloadHTML(htmlContent, htmlFilename, false);
 
           // Capture screenshot
@@ -901,7 +903,7 @@ chrome.runtime.onConnect.addListener((port) => {
                 // Crop the screenshot (remove 15% from left, 10% from bottom)
                 const croppedDataUrl = await cropScreenshot(dataUrl, 15, 10);
 
-                const screenshotFilename = `Instagram/${folderName}/${filePrefix}_screenshot.png`;
+                const screenshotFilename = `Instagram/${username}/${folderName}/${filePrefix}_screenshot.png`;
                 await downloadFile(croppedDataUrl, screenshotFilename, false);
 
                 // Mark as downloaded
@@ -1188,12 +1190,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       // Trigger download all
       if (currentData.media || currentData.comments) {
         const postInfo = currentData.media?.post_info || currentData.comments?.post_info || {};
+        const username = postInfo.username || 'unknown';
         const folderName = buildFolderName(postInfo);
         const filePrefix = buildFilePrefix(postInfo);
 
         // Download media
         if (currentData.media && currentData.media.media) {
-          const folderPrefix = `Instagram/${folderName}/media`;
+          const folderPrefix = `Instagram/${username}/${folderName}/media`;
           for (let i = 0; i < currentData.media.media.length; i++) {
             const item = currentData.media.media[i];
             const url = item.video_url || item.image_url;
@@ -1205,12 +1208,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
         // Download comments as JSON and CSV
         if (currentData.comments && currentData.comments.comments) {
-          const jsonFilename = `Instagram/${folderName}/comments/${filePrefix}_comments.json`;
+          const jsonFilename = `Instagram/${username}/${folderName}/comments/${filePrefix}_comments.json`;
           await downloadJSON(currentData.comments, jsonFilename, false);
 
           // Pass full currentData.comments object (includes post_info and comments)
           const csv = commentsToCSV(currentData.comments);
-          const csvFilename = `Instagram/${folderName}/comments/${filePrefix}_comments.csv`;
+          const csvFilename = `Instagram/${username}/${folderName}/comments/${filePrefix}_comments.csv`;
           await downloadCSV(csv, csvFilename, false);
         }
 
@@ -1221,13 +1224,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
           media_count: currentData.media?.media?.length || 0,
           comment_count: currentData.comments?.total || 0
         };
-        const metadataFilename = `Instagram/${folderName}/${filePrefix}_metadata.json`;
+        const metadataFilename = `Instagram/${username}/${folderName}/${filePrefix}_metadata.json`;
         await downloadJSON(metadata, metadataFilename, false);
 
         // Download HTML archive (wait a bit to ensure content script is ready for avatar fetching)
         await new Promise(resolve => setTimeout(resolve, 1000));
         const htmlContent = await generatePostHTML(currentData, filePrefix);
-        const htmlFilename = `Instagram/${folderName}/${filePrefix}_archive.html`;
+        const htmlFilename = `Instagram/${username}/${folderName}/${filePrefix}_archive.html`;
         await downloadHTML(htmlContent, htmlFilename, false);
 
         // Capture screenshot
@@ -1249,7 +1252,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
           chrome.tabs.sendMessage(tab.id, { action: 'restoreAvatar' });
 
           const croppedDataUrl = await cropScreenshot(dataUrl, 15, 10);
-          const screenshotFilename = `Instagram/${folderName}/${filePrefix}_screenshot.png`;
+          const screenshotFilename = `Instagram/${username}/${folderName}/${filePrefix}_screenshot.png`;
           await downloadFile(croppedDataUrl, screenshotFilename, false);
         } catch (error) {
           console.error('[Background] Screenshot failed:', error);

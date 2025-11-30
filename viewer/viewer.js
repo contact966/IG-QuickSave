@@ -4,6 +4,37 @@ let currentView = 'grid';
 let currentPostIndex = 0;
 let currentMediaIndex = 0;
 
+// Theme toggle
+const themeToggle = document.getElementById('themeToggle');
+
+// Initialize theme from localStorage
+function initTheme() {
+  const savedTheme = localStorage.getItem('viewerTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeButton(savedTheme);
+}
+
+function updateThemeButton(theme) {
+  if (themeToggle) {
+    themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
+    themeToggle.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  }
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('viewerTheme', newTheme);
+  updateThemeButton(newTheme);
+}
+
+// Initialize theme on load
+initTheme();
+
+// Theme toggle event listener
+themeToggle?.addEventListener('click', toggleTheme);
+
 // DOM Elements
 const welcomeScreen = document.getElementById('welcomeScreen');
 const postsContainer = document.getElementById('postsContainer');
@@ -1033,3 +1064,218 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// Build filename matching extension naming convention
+function buildFilePrefix(post) {
+  const username = post.username || 'unknown';
+  const postType = (post.post_type || 'POST').toUpperCase();
+  const shortcode = post.shortcode || 'post';
+
+  let dateStr = 'unknown-date';
+  if (post.posted_at) {
+    const date = new Date(post.posted_at);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    dateStr = `${year}${month}${day}`;
+  }
+
+  return `${username}_${postType}_${dateStr}_${shortcode}`;
+}
+
+// Download current media
+function downloadCurrentMedia() {
+  const post = posts[currentPostIndex];
+  if (!post || !post.media || !post.media[currentMediaIndex]) {
+    alert('No media available to download');
+    return;
+  }
+
+  const media = post.media[currentMediaIndex];
+  const filePrefix = buildFilePrefix(post);
+  const ext = media.type === 'video' ? 'mp4' : 'jpg';
+  const filename = `${filePrefix}_media_${currentMediaIndex + 1}.${ext}`;
+
+  // Create download link
+  const a = document.createElement('a');
+  a.href = media.url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// Download media button event listener
+document.getElementById('downloadMediaBtn')?.addEventListener('click', downloadCurrentMedia);
+
+// Create screenshot container with Instagram-style post
+function createScreenshotContainer(post, media, videoFrameDataUrl = null) {
+  const container = document.createElement('div');
+  container.className = 'screenshot-container';
+
+  const username = post.username || 'Unknown';
+  const initial = username.charAt(0).toUpperCase();
+  const avatarSrc = post.avatars?.[username];
+  const formattedDate = post.posted_at ? new Date(post.posted_at).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric'
+  }) : '';
+
+  // Use full caption - no truncation
+  const caption = post.caption || '';
+
+  // For videos, use the captured frame data URL; for images, use the media URL
+  const mediaSrc = media.type === 'video' && videoFrameDataUrl ? videoFrameDataUrl : media.url;
+
+  container.innerHTML = `
+    <div class="screenshot-post">
+      <div class="screenshot-header">
+        ${avatarSrc
+          ? `<img class="screenshot-avatar" src="${avatarSrc}" alt="${escapeHtml(username)}">`
+          : `<div class="screenshot-avatar">${initial}</div>`
+        }
+        <span class="screenshot-username">${escapeHtml(username)}</span>
+      </div>
+      <img class="screenshot-media" src="${mediaSrc}" alt="">
+      <div class="screenshot-footer">
+        <div class="screenshot-likes">${formatNumber(post.like_count || 0)} likes</div>
+        ${caption ? `
+          <div class="screenshot-caption">
+            <strong>${escapeHtml(username)}</strong>${escapeHtml(caption)}
+          </div>
+        ` : ''}
+        ${formattedDate ? `<div class="screenshot-time">${formattedDate}</div>` : ''}
+      </div>
+    </div>
+  `;
+
+  return container;
+}
+
+// Capture a frame from a video element and return as data URL
+async function captureVideoFrame(videoUrl) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.src = videoUrl;
+
+    video.onloadeddata = () => {
+      // Seek to 1 second or 10% of duration, whichever is smaller
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(dataUrl);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    video.onerror = () => reject(new Error('Failed to load video'));
+
+    // Fallback timeout
+    setTimeout(() => {
+      if (video.readyState >= 2) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 400;
+          canvas.height = video.videoHeight || 400;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.9));
+        } catch (e) {
+          reject(new Error('Video frame capture timed out'));
+        }
+      } else {
+        reject(new Error('Video failed to load'));
+      }
+    }, 5000);
+  });
+}
+
+// Export screenshot of current post
+async function exportScreenshot() {
+  const post = posts[currentPostIndex];
+  if (!post) {
+    alert('No post selected');
+    return;
+  }
+
+  const media = post.media[currentMediaIndex];
+  if (!media) {
+    alert('No media available');
+    return;
+  }
+
+  // Show loading state
+  const btn = document.getElementById('screenshotBtn');
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Creating...';
+  btn.disabled = true;
+
+  try {
+    // For videos, capture a frame first
+    let videoFrameDataUrl = null;
+    if (media.type === 'video') {
+      try {
+        videoFrameDataUrl = await captureVideoFrame(media.url);
+      } catch (videoError) {
+        console.warn('Could not capture video frame:', videoError);
+        // Continue with a placeholder or the first frame attempt
+      }
+    }
+
+    // Create screenshot container with video frame if available
+    const container = createScreenshotContainer(post, media, videoFrameDataUrl);
+    document.body.appendChild(container);
+
+    // Wait for images to load
+    const images = container.querySelectorAll('img');
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve; // Continue even if image fails
+      });
+    }));
+
+    // Small delay for rendering
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Capture with html2canvas
+    const screenshotPost = container.querySelector('.screenshot-post');
+    const canvas = await html2canvas(screenshotPost, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true
+    });
+
+    // Download
+    const link = document.createElement('a');
+    const filePrefix = buildFilePrefix(post);
+    link.download = `${filePrefix}_screenshot.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(container);
+  } catch (error) {
+    console.error('Screenshot failed:', error);
+    alert('Failed to create screenshot: ' + error.message);
+  } finally {
+    // Restore button state
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+// Screenshot button event listener
+document.getElementById('screenshotBtn')?.addEventListener('click', exportScreenshot);

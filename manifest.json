@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "IG Quick Save V6.4 Stable",
-  "version": "6.4.0",
+  "name": "IG Quick Save V6.5 Stable",
+  "version": "6.5.0",
   "description": "Download media and comments from Instagram posts and profiles - with profile scraping and archive viewer",
   "permissions": [
     "activeTab",
@@ -41,7 +41,7 @@
       "matches": ["https://www.instagram.com/*"]
     },
     {
-      "resources": ["viewer/instagram-viewer.html", "viewer/viewer.js"],
+      "resources": ["viewer/instagram-viewer.html", "viewer/viewer.js", "viewer/html2canvas.min.js"],
       "matches": ["<all_urls>"]
     }
   ]

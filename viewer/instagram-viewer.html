@@ -23,6 +23,16 @@
       --header-height: 60px;
     }
 
+    /* Light Mode */
+    [data-theme="light"] {
+      --bg-primary: #ffffff;
+      --bg-secondary: #fafafa;
+      --bg-tertiary: #efefef;
+      --text-primary: #262626;
+      --text-secondary: #8e8e8e;
+      --border-color: #dbdbdb;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg-primary);
@@ -104,6 +114,27 @@
 
     .select-folder-btn:hover {
       opacity: 0.9;
+    }
+
+    /* Theme Toggle Button */
+    .theme-toggle-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--bg-secondary);
+      border-color: var(--text-secondary);
     }
 
     /* Main Content */
@@ -582,6 +613,14 @@
       width: 100%;
     }
 
+    .modal-media-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
     .modal-media {
       flex: 1;
       background: var(--bg-secondary);
@@ -589,13 +628,44 @@
       align-items: center;
       justify-content: center;
       min-width: 0;
+      position: relative;
+      overflow: hidden;
     }
 
     .modal-media img,
     .modal-media video {
       max-width: 100%;
-      max-height: calc(100vh - 80px);
+      max-height: calc(100vh - 160px);
       object-fit: contain;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .modal-action-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-action-btn:hover {
+      background: var(--bg-primary);
+      border-color: var(--text-secondary);
     }
 
     .modal-sidebar {
@@ -635,6 +705,8 @@
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      padding-bottom: 4px;
+      padding-right: 8px;
     }
 
     .modal-caption-body.expanded {
@@ -892,8 +964,21 @@
         max-height: 50vh;
       }
 
-      .modal-media {
+      .modal-media-wrapper {
         max-height: 50vh;
+      }
+
+      .modal-media {
+        max-height: calc(50vh - 60px);
+      }
+
+      .modal-actions {
+        padding: 8px;
+      }
+
+      .modal-action-btn {
+        padding: 6px 12px;
+        font-size: 12px;
       }
 
       .filter-bar {
@@ -909,6 +994,88 @@
     .hidden {
       display: none !important;
     }
+
+    /* Screenshot Container (hidden, used for rendering) */
+    .screenshot-container {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      z-index: -1;
+    }
+
+    .screenshot-post {
+      width: 400px;
+      background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      border: 1px solid #dbdbdb;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .screenshot-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid #efefef;
+    }
+
+    .screenshot-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .screenshot-username {
+      font-weight: 600;
+      font-size: 14px;
+      color: #262626;
+    }
+
+    .screenshot-media {
+      width: 100%;
+      display: block;
+    }
+
+    .screenshot-footer {
+      padding: 12px;
+    }
+
+    .screenshot-likes {
+      font-weight: 600;
+      font-size: 14px;
+      color: #262626;
+      margin-bottom: 6px;
+    }
+
+    .screenshot-caption {
+      font-size: 14px;
+      line-height: 1.4;
+      color: #262626;
+      padding-bottom: 6px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .screenshot-caption strong {
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .screenshot-time {
+      font-size: 10px;
+      color: #8e8e8e;
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -921,6 +1088,7 @@
         <button data-view="feed">Feed</button>
       </div>
       <button class="select-folder-btn" id="selectFolderBtn">Select Folder</button>
+      <button class="theme-toggle-btn" id="themeToggle" title="Toggle theme">🌙</button>
     </div>
   </header>
 
@@ -1007,7 +1175,13 @@
   <div class="modal-overlay" id="modalOverlay">
     <button class="modal-close" id="modalClose">&times;</button>
     <div class="modal-content">
-      <div class="modal-media" id="modalMedia"></div>
+      <div class="modal-media-wrapper">
+        <div class="modal-media" id="modalMedia"></div>
+        <div class="modal-actions">
+          <button class="modal-action-btn" id="downloadMediaBtn" title="Download media">⬇️ Download</button>
+          <button class="modal-action-btn" id="screenshotBtn" title="Export screenshot">📸 Screenshot</button>
+        </div>
+      </div>
       <div class="modal-sidebar">
         <div class="modal-header" id="modalHeader"></div>
         <div class="modal-caption" id="modalCaption"></div>
@@ -1017,6 +1191,7 @@
     </div>
   </div>
 
+  <script src="html2canvas.min.js"></script>
   <script src="viewer.js"></script>
 </body>
 </html>
